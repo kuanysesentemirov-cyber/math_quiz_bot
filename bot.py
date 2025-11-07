@@ -1,85 +1,75 @@
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-TOKEN = "8454491066:AAGMR9yDX6hQUtgrQQM-6Gaz8pvJ0MWcNOo"
+# БОТ ТОКЕН ДӘЛ ОСЫ ЖЕРГЕ ЖАЗ
+TOKEN = "8454491066:AAEpz_e_jqv-vjWFgTMJDIq6vgN8hKQotoQ"
 
+# 20 сұрақ (5-6-7 сыныпқа арналған)
 questions = [
-    ("5 + 3 =", "8"),
-    ("10 - 4 =", "6"),
-    ("7 × 2 =", "14"),
-    ("12 ÷ 3 =", "4"),
-    ("9 + 6 =", "15"),
-    ("8 × 3 =", "24"),
-    ("15 - 7 =", "8"),
-    ("18 ÷ 2 =", "9"),
-    ("6 × 6 =", "36"),
-    ("14 + 5 =", "19"),
-    ("20 - 9 =", "11"),
-    ("21 ÷ 7 =", "3"),
-    ("11 + 11 =", "22"),
-    ("4 × 5 =", "20"),
-    ("30 - 12 =", "18"),
-    ("9 × 5 =", "45"),
-    ("16 ÷ 4 =", "4"),
-    ("13 + 6 =", "19"),
-    ("7 + 8 =", "15"),
-    ("25 - 7 =", "18"),
+    ("5 + 7 = ?", 12),
+    ("9 × 3 = ?", 27),
+    ("15 - 8 = ?", 7),
+    ("6 × 6 = ?", 36),
+    ("28 ÷ 4 = ?", 7),
+    ("49 ÷ 7 = ?", 7),
+    ("12 + 14 = ?", 26),
+    ("8 × 7 = ?", 56),
+    ("120 ÷ 10 = ?", 12),
+    ("25 × 3 = ?", 75),
+    ("35 - 19 = ?", 16),
+    ("15 + 45 = ?", 60),
+    ("100 ÷ 20 = ?", 5),
+    ("9 × 8 = ?", 72),
+    ("7 × 7 = ?", 49),
+    ("18 + 17 = ?", 35),
+    ("63 ÷ 9 = ?", 7),
+    ("2³ = ?", 8),
+    ("3² = ?", 9),
+    ("10² = ?", 100)
 ]
 
-users = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    users[user_id] = {"score": 0, "q": 0}
-    await update.message.reply_text(
-        "МАТЕМАТИКА ВИКТОРИНАСЫ!\nБарлығы 20 сұрақ.\nЖауапты санмен жазыңыз.\nАлғашқы сұрақ:"
-    )
-    await ask(update, context)
+    context.user_data["score"] = 0
+    context.user_data["q_index"] = 0
+    await update.message.reply_text("Математика викторинасына қош келдің! 🚀")
+    await ask_question(update, context)
 
-async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    q = users[user_id]["q"]
-    if q < len(questions):
-        await update.message.reply_text(f"{q+1}. {questions[q][0]}")
-    else:
-        score = users[user_id]["score"]
-        await update.message.reply_text(f"✅ Викторина аяқталды!\nҰпай: {score}/{len(questions)}")
 
-async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    msg = update.message.text.strip()
+async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    index = context.user_data["q_index"]
 
-    if user_id not in users:
-        users[user_id] = {"score": 0, "q": 0}
+    if index >= len(questions):
+        score = context.user_data["score"]
+        await update.message.reply_text(f"✅ Викторина аяқталды!\nСенің нәтижең: {score}/20")
+        return
 
-    q = users[user_id]["q"]
+    question, answer = questions[index]
+    context.user_data["answer"] = answer
+    await update.message.reply_text(f"Сұрақ {index+1}/20:\n{question}")
 
-    if q < len(questions) and msg == questions[q][1]:
-        users[user_id]["score"] += 1
+
+async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_answer = update.message.text.strip()
+
+    correct_answer = context.user_data.get("answer", None)
+
+    if correct_answer is None:
+        await update.message.reply_text("Алдымен /start бас 😅")
+        return
+
+    if user_answer == str(correct_answer):
+        context.user_data["score"] += 1
         await update.message.reply_text("✅ Дұрыс!")
     else:
-        await update.message.reply_text(f"❌ Қате! Дұрысы: {questions[q][1]}")
+        await update.message.reply_text(f"❌ Қате! Дұрыс жауап: {correct_answer}")
 
-    users[user_id]["q"] += 1
-    await ask(update, context)
+    context.user_data["q_index"] += 1
+    await ask_question(update, context)
 
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_msg))
 
-    print("BOT STARTED...")
-    app.run_polling()
-
-if __name__ == "__main__":
+if name == "main":
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT, check_answer))
     app.run_polling()
-    main()
