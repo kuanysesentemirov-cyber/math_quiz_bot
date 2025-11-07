@@ -113,7 +113,7 @@ async def ask_question(update, context):
 async def check_answer(update, context):
     user_answer = update.message.text.strip()
     correct_answer = context.user_data.get("answer", None)
-
+
 if correct_answer is None:
         await update.message.reply_text("Алдымен /start енгіз.")
         return
