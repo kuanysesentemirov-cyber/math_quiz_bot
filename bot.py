@@ -77,5 +77,9 @@ def main():
     print("BOT STARTED...")
     app.run_polling()
 
-if name == "main":
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT, check_answer))
+    app.run_polling()
     main()
