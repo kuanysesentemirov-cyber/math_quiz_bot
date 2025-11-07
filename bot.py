@@ -30,6 +30,7 @@ questions = [
     ("10**2 = ?", 100)
 ]
 
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -48,6 +49,7 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+
 
 def update_stats(user_id, username, first_name, score, total_questions):
     conn = sqlite3.connect(DB_PATH)
@@ -74,6 +76,7 @@ def update_stats(user_id, username, first_name, score, total_questions):
     conn.commit()
     conn.close()
 
+
 def get_user_stats(user_id):
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
@@ -81,6 +84,7 @@ def get_user_stats(user_id):
     row = cur.fetchone()
     conn.close()
     return row
+
 
 def get_leaderboard(limit=10):
     conn = sqlite3.connect(DB_PATH)
@@ -90,13 +94,15 @@ def get_leaderboard(limit=10):
     conn.close()
     return rows
 
-async def start(update, context):
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["score"] = 0
     context.user_data["q_index"] = 0
     await update.message.reply_text("Математика викторинасына қош келдің!")
     await ask_question(update, context)
 
-async def ask_question(update, context):
+
+async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     index = context.user_data.get("q_index", 0)
     if index >= len(questions):
         score = context.user_data.get("score", 0)
@@ -109,11 +115,12 @@ async def ask_question(update, context):
     context.user_data["answer"] = answer
     await update.message.reply_text(question)
 
-async def check_answer(update, context):
+
+async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_answer = update.message.text.strip()
     correct_answer = context.user_data.get("answer", None)
 
-if correct_answer is None:
+    if correct_answer is None:
         await update.message.reply_text("Алдымен /start енгіз.")
         return
 
@@ -129,17 +136,25 @@ if correct_answer is None:
     context.user_data["q_index"] += 1
     await ask_question(update, context)
 
-async def mystats(update, context):
+
+async def mystats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     row = get_user_stats(user.id)
     if not row:
         await update.message.reply_text("Статистика жоқ. /start бас.")
         return
     username, first_name, total_attempts, total_correct, games_played, best_score, last_score = row
-    text = f"Ойындар: {games_played}\nБарлық сұрақтар: {total_attempts}\nДұрыс жауап: {total_correct}\nЕң жақсы нәтиже: {best_score}\nСоңғы нәтиже: {last_score}"
+    text = (
+        f"Ойындар: {games_played}\n"
+        f"Барлық сұрақтар: {total_attempts}\n"
+        f"Дұрыс жауап: {total_correct}\n"
+        f"Ең жақсы нәтиже: {best_score}\n"
+        f"Соңғы нәтиже: {last_score}"
+    )
     await update.message.reply_text(text)
 
-async def leaderboard(update, context):
+
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rows = get_leaderboard(10)
     if not rows:
         await update.message.reply_text("Статистика бос.")
@@ -151,6 +166,7 @@ async def leaderboard(update, context):
         text += f"{i}) {name}: best={best_score}, total_correct={total_correct}, games={games_played}\n"
         i += 1
     await update.message.reply_text(text)
+
 
 def main():
     if not os.path.exists(DB_PATH):
@@ -164,6 +180,6 @@ def main():
     print("BOT STARTED")
     app.run_polling()
 
+
 if __name__ == "__main__":
     main()
-
