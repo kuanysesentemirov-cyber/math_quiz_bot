@@ -1,12 +1,14 @@
-# bot.py
-# Қазақша математика викторина боты (python-telegram-bot v20.3)
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 
-# TOKEN-ді .env немесе Render Environment Variables ішінде TOKEN ретінде қой
-TOKEN = "8454491066:AAEpz_e_jqv-vjWFgTMJDIq6vgN8hKQotoQ"
+TOKEN = "8454491066:AAGMR9yDX6hQUtgrQQM-6Gaz8pvJ0MWcNOo"
 
-# 20 сұрақ — 5-7 сынып деңгейіне арналған (пайдаланушы тек мәтінмен жауап береді)
 questions = [
     ("5 + 3 =", "8"),
     ("10 - 4 =", "6"),
@@ -30,77 +32,50 @@ questions = [
     ("25 - 7 =", "18"),
 ]
 
-# Қолданушы деректерін сақтау (жеңіл, сервер қайта жүктелсе жоғалады)
-users = {}  # user_id -> {"score": int, "q": int}
+users = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     users[user_id] = {"score": 0, "q": 0}
     await update.message.reply_text(
-        "МАТЕМАТИКА ВИКТОРИНАСЫНА ҚОШ КЕЛДІҢ!\n20 сұрақ бар. Әр сұраққа жауапты тек санмен жаз.\nБастау үшін дайын болсаң — жауапты жазыңыз."
+        "МАТЕМАТИКА ВИКТОРИНАСЫ!\nБарлығы 20 сұрақ.\nЖауапты санмен жазыңыз.\nАлғашқы сұрақ:"
     )
-    # Бірінші сұрақты шығару
-    await ask_question(update, context)
+    await ask(update, context)
 
-async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id not in users:
-        users[user_id] = {"score": 0, "q": 0}
-    idx = users[user_id]["q"]
-    if idx < len(questions):
-        q_text = questions[idx][0]
-        await update.message.reply_text(f"{idx+1}. {q_text}")
+    q = users[user_id]["q"]
+    if q < len(questions):
+        await update.message.reply_text(f"{q+1}. {questions[q][0]}")
     else:
         score = users[user_id]["score"]
-        await update.message.reply_text(f"Викторина аяқталды! Сенің ұпайың: {score}/{len(questions)}")
+        await update.message.reply_text(f"✅ Викторина аяқталды!\nҰпай: {score}/{len(questions)}")
 
 async def handle_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    text = update.message.text.strip()
-    # Егер қолданушы бастамаған болса — баста
+    msg = update.message.text.strip()
+
     if user_id not in users:
         users[user_id] = {"score": 0, "q": 0}
-        await update.message.reply_text("Викторина автоматты түрде басталды.")
-        await ask_question(update, context)
-        return
 
-    idx = users[user_id]["q"]
-    # егер викторина аяқталған болса, қайта бастау опциясы ұсыныңыз
-    if idx >= len(questions):
-        await update.message.reply_text("Викторина аяқталды. Қайта бастау үшін /start жазыңыз.")
-        return
+    q = users[user_id]["q"]
 
-    correct = questions[idx][1]
-    # Жауап бірдей ме (сан ретінде тексереміз)
-    if text == correct:
+    if q < len(questions) and msg == questions[q][1]:
         users[user_id]["score"] += 1
         await update.message.reply_text("✅ Дұрыс!")
     else:
-        await update.message.reply_text(f"❌ Қате! Дұрысы: {correct}")
+        await update.message.reply_text(f"❌ Қате! Дұрысы: {questions[q][1]}")
 
     users[user_id]["q"] += 1
-    # Келесі сұрақты жібереміз (немесе нәтижені)
-    if users[user_id]["q"] < len(questions):
-        next_q = questions[users[user_id]["q"]][0]
-        await update.message.reply_text(f"{users[user_id]['q']+1}. {next_q}")
-    else:
-        score = users[user_id]["score"]
-        await update.message.reply_text(f"Викторина аяқталды! Сенің ұпайың: {score}/{len(questions)}\nҚайта бастау үшін /start жазыңыз.")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Пайдалану: /start — викторинаны бастау. Сұрақтарға жауапты тек санмен жіберіңіз.")
+    await ask(update, context)
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    # Барлық мәтіндік хабарларды қабылдау (командалардан басқасын)
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_msg))
-    print("Бот іске қосылып жатыр...")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_msg))
+
+    print("BOT STARTED...")
     app.run_polling()
 
 if name == "main":
     main()
-app.add_handler(MessageHandler(None, handle_msg))
-
-app.run_polling()
