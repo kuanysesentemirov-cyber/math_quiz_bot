@@ -5,7 +5,6 @@ from datetime import datetime
 import os
 
 TOKEN = "8586918388:AAH6_sdfyO7V1B26odqZVnbucnwna8JrmJA"
-
 DB_PATH = "stats.db"
 
 questions = [
@@ -167,3 +166,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
